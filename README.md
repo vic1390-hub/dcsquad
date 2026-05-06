@@ -11,7 +11,7 @@ Arlo	Communications Strategist — positioning, message frameworks, crisis respo
 Nova	Newsletter Designer — writes the resident newsletter for Tampines Changkat
 ---
 Access
-🔗 Live app: `https://yourusername.github.io/dc-squad`
+🔗 Live app: `https://vic1390-hub.github.io/dc-squad`
 To use the app you need:
 An Anthropic API key — get one at console.anthropic.com
 (Optional) A Google OAuth Client ID — to connect Cleo to Mr Choo's Google Calendar
