@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DC Squad — Desmond Choo's AI Team</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F3F1EC; --surface: #FDFCFA; --border: #DDD8CF; --border-strong: #C4BCAF;
+    --text: #18150F; --muted: #79736A;
+    --red: #B83C2B; --red-bg: #FDF1EE; --red-border: #E8B4AA;
+    --teal: #1E6B5A; --teal-bg: #E8F4F0; --teal-border: #8ECABB;
+    --amber: #A0620A; --amber-bg: #FDF4E3; --amber-border: #E8C87E;
+    --blue: #1E4480; --blue-bg: #EAF0F9; --blue-border: #8AAAD6;
+    --plum: #6E2F7A; --plum-bg: #F5EAFA; --plum-border: #C498D4;
+    --user-bubble: #18150F; --user-text: #F3F1EC; --agent-bubble: #EDEAE4;
+  }
+  body { font-family: 'Instrument Sans', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+
+  /* ── GATE ── */
+  #keyGate { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 24px; overflow-y: auto; }
+  .gate-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 40px 44px; max-width: 500px; width: 100%; }
+  .gate-flag { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .flag-bar { width: 4px; height: 36px; border-radius: 2px; background: var(--red); flex-shrink: 0; }
+  .gate-eyebrow { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
+  .gate-title { font-family: 'DM Serif Display', serif; font-size: 26px; letter-spacing: -0.02em; color: var(--text); }
+  .gate-agents { display: flex; margin: 18px 0; }
+  .gate-av { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'DM Serif Display', serif; font-size: 15px; border: 2px solid var(--surface); margin-left: -10px; }
+  .gate-av:first-child { margin-left: 0; }
+  .gate-desc { font-size: 13px; color: var(--muted); line-height: 1.65; margin-bottom: 22px; }
+  .gate-desc strong { color: var(--text); font-weight: 600; }
+
+  .gate-section { margin-bottom: 16px; }
+  .gate-section-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .lbl-badge { font-size: 9px; padding: 2px 7px; border-radius: 10px; font-family: 'DM Mono', monospace; letter-spacing: 0.03em; }
+  .lbl-req { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+  .lbl-opt { background: var(--teal-bg); color: var(--teal); border: 1px solid var(--teal-border); }
+
+  .gate-input-wrap { position: relative; }
+  .gate-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 11px 42px 11px 14px; font-size: 13px; font-family: 'DM Mono', monospace; color: var(--text); outline: none; letter-spacing: 0.02em; transition: border-color 0.14s; }
+  .gate-input:focus { border-color: var(--border-strong); }
+  .gate-input::placeholder { font-family: 'Instrument Sans', sans-serif; color: var(--muted); letter-spacing: 0; font-size: 12.5px; }
+  .toggle-vis { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--muted); font-size: 13px; }
+  .toggle-vis:hover { color: var(--text); }
+
+  .gate-hint-inline { font-size: 11px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+  .gate-hint-inline a { color: var(--blue); text-decoration: none; }
+  .gate-hint-inline a:hover { text-decoration: underline; }
+
+  .gcal-steps { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-top: 8px; }
+  .gcal-steps summary { font-size: 12px; color: var(--muted); cursor: pointer; font-family: 'DM Mono', monospace; letter-spacing: 0.02em; }
+  .gcal-steps summary:hover { color: var(--text); }
+  .gcal-steps ol { margin: 10px 0 0 16px; font-size: 12px; color: var(--muted); line-height: 1.8; }
+  .gcal-steps ol li { margin-bottom: 2px; }
+  .gcal-steps ol li code { font-family: 'DM Mono', monospace; background: var(--surface); padding: 1px 5px; border-radius: 4px; font-size: 11px; color: var(--text); }
+  .gcal-steps a { color: var(--blue); text-decoration: none; }
+  .gcal-steps a:hover { text-decoration: underline; }
+
+  .gate-error { font-size: 12px; color: var(--red); min-height: 16px; margin: 6px 0 2px; }
+  .gate-btn { width: 100%; background: var(--text); color: var(--surface); border: none; border-radius: 10px; padding: 13px; font-size: 14px; font-family: 'Instrument Sans', sans-serif; font-weight: 600; cursor: pointer; letter-spacing: 0.01em; transition: opacity 0.12s; margin-top: 8px; }
+  .gate-btn:hover { opacity: 0.82; }
+  .gate-footer-hint { font-size: 11px; color: var(--muted); margin-top: 14px; line-height: 1.7; text-align: center; }
+  .gate-footer-hint a { color: var(--blue); text-decoration: none; }
+
+  /* ── SIDEBAR ── */
+  .sidebar { width: 288px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  .sidebar-top { padding: 20px 18px 16px; border-bottom: 1px solid var(--border); }
+  .brand-eyebrow { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
+  .brand-name { font-family: 'DM Serif Display', serif; font-size: 20px; letter-spacing: -0.02em; color: var(--text); line-height: 1; }
+  .brand-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .badges-row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .sb-badge { display: flex; align-items: center; gap: 4px; font-size: 9.5px; font-family: 'DM Mono', monospace; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 3px 7px; cursor: pointer; transition: border-color 0.12s; white-space: nowrap; }
+  .sb-badge:hover { border-color: var(--border-strong); }
+  .sb-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .dot-api { background: var(--teal); }
+  .dot-gcal-on { background: var(--blue); }
+  .dot-gcal-off { background: #ADA89E; }
+
+  .agent-list { flex: 1; overflow-y: auto; padding: 10px 8px; display: flex; flex-direction: column; gap: 3px; }
+  .agent-list::-webkit-scrollbar { width: 3px; }
+  .agent-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .agent-row { padding: 10px 11px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; border: 1px solid transparent; transition: all 0.13s ease; }
+  .agent-row:hover { background: var(--bg); border-color: var(--border); }
+  .agent-row.active { background: var(--bg); border-color: var(--border-strong); }
+  .av { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'DM Serif Display', serif; font-size: 15px; flex-shrink: 0; border: 1.5px solid; transition: transform 0.13s; }
+  .agent-row:hover .av, .agent-row.active .av { transform: scale(1.07); }
+  .av-iris { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+  .av-cleo { background: var(--teal-bg); color: var(--teal); border-color: var(--teal-border); }
+  .av-wren { background: var(--plum-bg); color: var(--plum); border-color: var(--plum-border); }
+  .av-arlo { background: var(--blue-bg); color: var(--blue); border-color: var(--blue-border); }
+  .av-nova { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+  .agent-meta { flex: 1; min-width: 0; }
+  .agent-name { font-size: 13.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .agent-role { font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; font-family: 'DM Mono', monospace; }
+  .pip { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .pip-on { background: var(--teal); }
+  .pip-busy { background: var(--amber); }
+  .pip-idle { background: #ADA89E; }
+
+  .sidebar-footer { padding: 12px 14px; border-top: 1px solid var(--border); }
+  .bcast-label { font-size: 9.5px; font-family: 'DM Mono', monospace; color: var(--muted); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 7px; }
+  .bcast-row { display: flex; gap: 6px; }
+  .bcast-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 12px; font-family: 'Instrument Sans', sans-serif; color: var(--text); outline: none; }
+  .bcast-input:focus { border-color: var(--border-strong); }
+  .bcast-btn { background: var(--text); color: var(--surface); border: none; border-radius: 8px; padding: 7px 12px; font-size: 11px; font-family: 'Instrument Sans', sans-serif; font-weight: 600; cursor: pointer; white-space: nowrap; transition: opacity 0.12s; }
+  .bcast-btn:hover { opacity: 0.82; }
+
+  /* ── MAIN ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .chat-header { padding: 16px 24px 14px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: flex-start; gap: 14px; }
+  .hav { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'DM Serif Display', serif; font-size: 19px; flex-shrink: 0; border: 1.5px solid; }
+  .h-info { flex: 1; min-width: 0; }
+  .h-name { font-family: 'DM Serif Display', serif; font-size: 18px; letter-spacing: -0.01em; line-height: 1.1; }
+  .h-tagline { font-size: 11.5px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+  .h-tags { display: flex; gap: 5px; margin-top: 7px; flex-wrap: wrap; }
+  .htag { font-family: 'DM Mono', monospace; font-size: 10px; padding: 3px 9px; border-radius: 20px; letter-spacing: 0.02em; border: 1px solid; }
+
+  /* Calendar strip */
+  .cal-strip { padding: 8px 24px; background: var(--blue-bg); border-bottom: 1px solid var(--blue-border); display: none; align-items: center; gap: 10px; }
+  .cal-strip.visible { display: flex; }
+  .cal-strip-icon { font-size: 13px; }
+  .cal-strip-text { font-size: 11.5px; color: var(--blue); font-family: 'DM Mono', monospace; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cal-refresh { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--blue); background: none; border: 1px solid var(--blue-border); border-radius: 6px; padding: 3px 8px; cursor: pointer; white-space: nowrap; }
+  .cal-refresh:hover { background: var(--surface); }
+
+  .chat-msgs { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 13px; background: var(--bg); }
+  .chat-msgs::-webkit-scrollbar { width: 3px; }
+  .chat-msgs::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .msg-g { display: flex; flex-direction: column; gap: 4px; animation: msgIn 0.2s ease; }
+  .msg-g.user { align-items: flex-end; }
+  .msg-g.agent { align-items: flex-start; }
+  .msg-who { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--muted); letter-spacing: 0.04em; padding: 0 4px; }
+  .btag { display: inline-block; font-family: 'DM Mono', monospace; font-size: 9px; padding: 1px 6px; border-radius: 4px; background: rgba(0,0,0,0.08); margin-left: 5px; letter-spacing: 0.04em; vertical-align: middle; }
+  .bubble { max-width: 70%; padding: 10px 14px; border-radius: 14px; font-size: 13.5px; line-height: 1.65; white-space: pre-wrap; word-break: break-word; }
+  .msg-g.user .bubble { background: var(--user-bubble); color: var(--user-text); border-bottom-right-radius: 4px; }
+  .msg-g.agent .bubble { background: var(--agent-bubble); color: var(--text); border-bottom-left-radius: 4px; }
+  .typing { display: flex; align-items: center; gap: 5px; padding: 12px 14px; background: var(--agent-bubble); border-radius: 14px; border-bottom-left-radius: 4px; width: fit-content; }
+  .td { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); animation: bounce 1.2s infinite; }
+  .td:nth-child(2) { animation-delay: 0.2s; }
+  .td:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100%{ transform:translateY(0);opacity:.5; } 30%{ transform:translateY(-5px);opacity:1; } }
+
+  .chat-input-area { padding: 12px 18px 14px; background: var(--surface); border-top: 1px solid var(--border); }
+  .input-row { display: flex; align-items: flex-end; gap: 9px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 9px 9px 9px 15px; transition: border-color 0.13s; }
+  .input-row:focus-within { border-color: var(--border-strong); }
+  .msg-ta { flex: 1; background: transparent; border: none; outline: none; resize: none; font-size: 13.5px; font-family: 'Instrument Sans', sans-serif; color: var(--text); line-height: 1.5; min-height: 22px; max-height: 96px; overflow-y: auto; }
+  .msg-ta::placeholder { color: var(--muted); }
+  .send-btn { width: 34px; height: 34px; border-radius: 9px; background: var(--text); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--surface); flex-shrink: 0; transition: opacity 0.12s, transform 0.1s; }
+  .send-btn:hover { opacity: 0.82; }
+  .send-btn:active { transform: scale(0.95); }
+  .send-btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .input-hint { font-size: 10.5px; font-family: 'DM Mono', monospace; color: var(--muted); margin-top: 6px; text-align: center; letter-spacing: 0.02em; }
+
+  /* ── MODALS ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(24,21,15,0.5); z-index: 200; align-items: center; justify-content: center; padding: 24px; }
+  .modal-overlay.open { display: flex; }
+  .modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 30px 34px; max-width: 420px; width: 100%; }
+  .modal-title { font-family: 'DM Serif Display', serif; font-size: 19px; margin-bottom: 6px; }
+  .modal-desc { font-size: 12.5px; color: var(--muted); margin-bottom: 16px; line-height: 1.6; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .m-cancel { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: 9px; background: transparent; font-size: 13px; font-family: 'Instrument Sans', sans-serif; color: var(--muted); cursor: pointer; }
+  .m-cancel:hover { color: var(--text); border-color: var(--border-strong); }
+  .m-save { flex: 2; padding: 10px; border: none; border-radius: 9px; background: var(--text); color: var(--surface); font-size: 13px; font-family: 'Instrument Sans', sans-serif; font-weight: 600; cursor: pointer; transition: opacity 0.12s; }
+  .m-save:hover { opacity: 0.82; }
+
+  @keyframes msgIn { from{opacity:0;transform:translateY(6px);} to{opacity:1;transform:translateY(0);} }
+</style>
+</head>
+<body>
+
+<!-- ── SETUP GATE ── -->
+<div id="keyGate">
+  <div class="gate-card">
+    <div class="gate-flag">
+      <div class="flag-bar"></div>
+      <div>
+        <div class="gate-eyebrow">AI Communications Team</div>
+        <div class="gate-title">DC Squad</div>
+      </div>
+    </div>
+
+    <div class="gate-agents">
+      <div class="gate-av av-iris">I</div>
+      <div class="gate-av av-cleo">C</div>
+      <div class="gate-av av-wren">W</div>
+      <div class="gate-av av-arlo">A</div>
+      <div class="gate-av av-nova">N</div>
+    </div>
+
+    <p class="gate-desc">Five AI agents for <strong>Mr Desmond Choo</strong> — sentiment research, content calendar (with live Google Calendar sync), social copywriting, strategy, and resident newsletters.</p>
+
+    <!-- Anthropic Key -->
+    <div class="gate-section">
+      <div class="gate-section-label">
+        Anthropic API Key <span class="lbl-badge lbl-req">Required</span>
+      </div>
+      <div class="gate-input-wrap">
+        <input class="gate-input" type="password" id="apiKeyInput" placeholder="sk-ant-api03-…" onkeydown="if(event.key==='Enter') tryEnter()">
+        <button class="toggle-vis" onclick="toggleVis('apiKeyInput')">👁</button>
+      </div>
+      <p class="gate-hint-inline">Get yours at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys</p>
+    </div>
+
+    <!-- Google Client ID -->
+    <div class="gate-section">
+      <div class="gate-section-label">
+        Google OAuth Client ID <span class="lbl-badge lbl-opt">Optional — enables Cleo's calendar sync</span>
+      </div>
+      <div class="gate-input-wrap">
+        <input class="gate-input" type="text" id="gcalClientId" placeholder="123456789-abc….apps.googleusercontent.com" onkeydown="if(event.key==='Enter') tryEnter()">
+      </div>
+      <details class="gcal-steps">
+        <summary>How to get a Google Client ID (5 steps)</summary>
+        <ol>
+          <li>Go to <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> and create a new project (e.g. <code>DC Squad</code>)</li>
+          <li>Enable the <strong>Google Calendar API</strong> — search for it in the API Library</li>
+          <li>Go to <strong>APIs &amp; Services → Credentials → Create Credentials → OAuth client ID</strong></li>
+          <li>Choose <strong>Web application</strong>. Under <em>Authorised JavaScript origins</em> add the full path to this HTML file (e.g. <code>http://localhost:8000</code> or your hosted URL)</li>
+          <li>Copy the <strong>Client ID</strong> (ends in <code>.apps.googleusercontent.com</code>) and paste above</li>
+        </ol>
+      </details>
+    </div>
+
+    <div class="gate-error" id="gateError"></div>
+    <button class="gate-btn" onclick="tryEnter()">Enter DC Squad →</button>
+    <p class="gate-footer-hint">Your keys stay in your browser — never stored or sent anywhere except Google &amp; Anthropic.</p>
+  </div>
+</div>
+
+<!-- ── CHANGE KEY MODAL ── -->
+<div class="modal-overlay" id="keyModal">
+  <div class="modal-card">
+    <div class="modal-title">Update API key</div>
+    <div class="modal-desc">Enter a new Anthropic API key. Conversations are preserved.</div>
+    <div class="gate-input-wrap">
+      <input class="gate-input" type="password" id="modalKeyInput" placeholder="sk-ant-api03-…">
+      <button class="toggle-vis" onclick="toggleVis('modalKeyInput')">👁</button>
+    </div>
+    <div class="gate-error" id="modalError"></div>
+    <div class="modal-actions">
+      <button class="m-cancel" onclick="closeModal('keyModal')">Cancel</button>
+      <button class="m-save" onclick="saveApiKey()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── GCAL MODAL (reconnect) ── -->
+<div class="modal-overlay" id="gcalModal">
+  <div class="modal-card">
+    <div class="modal-title">Google Calendar</div>
+    <div class="modal-desc" id="gcalModalDesc">Connect Cleo to Mr Choo's Google Calendar to auto-load upcoming events into every planning session.</div>
+    <div class="modal-actions">
+      <button class="m-cancel" onclick="closeModal('gcalModal')">Close</button>
+      <button class="m-save" onclick="gcalSignIn()">Connect Google Calendar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div class="sidebar">
+  <div class="sidebar-top">
+    <div class="brand-eyebrow">Mr Desmond Choo · AI Team</div>
+    <div class="brand-name">DC Squad</div>
+    <div class="brand-sub">Tampines Changkat · MINDEF · NTUC</div>
+    <div class="badges-row">
+      <div class="sb-badge" onclick="openModal('keyModal')" title="Change Anthropic API key">
+        <div class="sb-dot dot-api"></div><span>Anthropic</span>
+      </div>
+      <div class="sb-badge" id="gcalBadge" onclick="handleGcalBadge()" title="Google Calendar status">
+        <div class="sb-dot dot-gcal-off" id="gcalDot"></div><span id="gcalBadgeLabel">Calendar: off</span>
+      </div>
+    </div>
+  </div>
+  <div class="agent-list" id="agentList"></div>
+  <div class="sidebar-footer">
+    <div class="bcast-label">📡 Brief all agents</div>
+    <div class="bcast-row">
+      <input class="bcast-input" id="bcastInput" placeholder="Send to all agents…" onkeydown="if(event.key==='Enter'){event.preventDefault();broadcast()}">
+      <button class="bcast-btn" onclick="broadcast()">Send</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="chat-header" id="chatHeader"></div>
+
+  <!-- Calendar event strip (Cleo only) -->
+  <div class="cal-strip" id="calStrip">
+    <span class="cal-strip-icon">📅</span>
+    <span class="cal-strip-text" id="calStripText">Loading calendar…</span>
+    <button class="cal-refresh" onclick="loadCalendar(true)">↻ Refresh</button>
+  </div>
+
+  <div class="chat-msgs" id="chatMsgs"></div>
+  <div class="chat-input-area">
+    <div class="input-row">
+      <textarea class="msg-ta" id="msgInput" placeholder="Ask your agent…" rows="1"
+        onkeydown="handleKey(event)" oninput="resize(this)"></textarea>
+      <button class="send-btn" onclick="sendMsg()" aria-label="Send">
+        <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+    <div class="input-hint">Enter to send · Shift+Enter for new line</div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+let API_KEY = "";
+let GCAL_CLIENT_ID = "";
+let gcalToken = null;
+let calendarEvents = [];
+let calendarContext = "";
+let activeId = 2; // Start on Cleo
+
+const CLEO_ID = 2;
+
+// ── AGENTS ──
+const AGENTS = [
+  {
+    id: 1, name: "Iris", initial: "I", avClass: "av-iris",
+    role: "Sentiment & Research",
+    accent: "var(--amber)", pillBorder: "var(--amber-border)",
+    tagStyle: "background:var(--amber-bg);color:var(--amber);border-color:var(--amber-border)",
+    status: "on",
+    tagline: "Monitors public sentiment, media coverage, and surfaces research on issues facing Tampines Changkat, MINDEF & NTUC.",
+    tags: ["Sentiment analysis", "Media monitoring", "Public opinion", "Narrative gaps"],
+    system: `You are Iris, the Sentiment & Research Analyst for Mr Desmond Choo — MP for Tampines Changkat SMC, Minister of State for the Ministry of Defence (since May 2025), President of SAFRA (since July 2025), and Deputy Secretary-General of NTUC (since September 2025).
+
+Your role:
+- Monitor and analyse public sentiment toward Mr Choo across Facebook, Instagram, HardwareZone, Reddit r/singapore, CNA, Straits Times, Zaobao, Tamil Murasu, and Berita Harian
+- Research public opinion on his key issues: workers' rights, NS/SAF matters, Tampines grassroots, defence readiness, NTUC policies, low-wage worker support, upskilling, youth employment
+- Identify gaps: topics the public cares about that he hasn't addressed
+- Flag emerging concerns among Tampines residents (seniors, families, hawkers, PMETs, NSmen, new citizens)
+- Summarise media coverage and sentiment in structured briefs with clear recommendations
+- Advise on issues to proactively address before they become criticism
+
+Key public criticism touchpoints to monitor:
+- Family connection to former MP Choo Wee Khiang (nepotism narrative)
+- NTUC-Income Insurance/Allianz 51% stake controversy — he did not speak or file questions during parliamentary debate
+- Balancing three demanding roles (only 3–4 hours sleep; public perception of capacity)
+- Newly carved Tampines Changkat SMC — needs to build identity and resident trust from scratch
+
+Opportunity narratives to amplify:
+- Bridging MINDEF + NTUC: jobs and retraining for retired servicemen (e.g. logistics → Tuas Port)
+- SAFRA as a "defence movement" beyond recreation
+- Hands-on grassroots style ("visit the constituency personally, not just from reports")
+- People-first labour champion for low-wage workers
+
+Be analytical, balanced, and honest. When you lack real-time data, say so clearly and recommend what to search or monitor. Always end with 1–3 concrete recommendations.`,
+    history: [{ role: "agent", text: "Hello — I'm Iris, your Sentiment & Research Analyst.\n\nI track public perception of Mr Choo across social media, forums, and mainstream media — covering all three of his roles: MP for Tampines Changkat, MOS Defence, and NTUC Deputy Sec-Gen.\n\nAsk me to analyse sentiment on any topic, identify gaps in his public messaging, or research what residents and workers are saying about an issue. I'll always flag both the positives and the risks." }]
+  },
+  {
+    id: 2, name: "Cleo", initial: "C", avClass: "av-cleo",
+    role: "Content Calendar Planner",
+    accent: "var(--teal)", pillBorder: "var(--teal-border)",
+    tagStyle: "background:var(--teal-bg);color:var(--teal);border-color:var(--teal-border)",
+    status: "on",
+    tagline: "Plans Mr Choo's social content calendar across Facebook & Instagram — synced to his live Google Calendar.",
+    tags: ["Weekly planning", "Google Calendar sync", "Campaign mapping", "Platform scheduling"],
+    system: `You are Cleo, the Content Calendar Planner for Mr Desmond Choo — MP for Tampines Changkat SMC, Minister of State for the Ministry of Defence, and Deputy Secretary-General of NTUC.
+
+Your role:
+- Plan his social media content calendar across Facebook (~12,500 followers) and Instagram (~11,000 followers)
+- You have access to his live Google Calendar — events will be provided to you at the start of each planning session
+- Align content to his schedule: parliamentary sittings, MINDEF engagements, NTUC events, grassroots visits, MPS sessions (every Monday 7:30–9:30pm at Blk 114 Tampines St 11), national events, and Singapore's public calendar
+
+Three content pillars:
+1. 🏘 MP / Community — Tampines Changkat visits, MPS sessions, resident engagements, seniors, families, hawkers, estate improvements (Silver Zones, bus routes, amenities), Nexus internship platform
+2. 🛡 MINDEF / Defence — NS matters, SAF readiness, SAFRA events and "defence movement" pivot, servicemen welfare, retired servicemen career transitions, Shangri-La Dialogue, Total Defence
+3. 💼 NTUC / Labour — workers' rights, fair wages, CTC (Company Training Committees), upskilling, SkillsFuture, low-wage worker support, youth employment, union milestones
+
+Singapore national calendar to factor in:
+- Total Defence Day: 15 Feb | Labour Day: 1 May | SAF Day: 1 Jul | Racial Harmony Day: 21 Jul | National Day: 9 Aug | plus CNY, Deepavali, Hari Raya, Vesak, Christmas
+- Parliamentary sitting dates (check calendar)
+- NTUC events and May Day Rally
+- SAFRA events and NS activities
+
+Recommended posting cadence: 4–5 posts per week
+- 2 community/MP posts | 1–2 NTUC/labour posts | 1 MINDEF/defence post
+- Vary formats: photo post, carousel (facts/tips), quote card, short video, behind-the-scenes
+
+When planning a calendar, output a clean table:
+| Date | Day | Platform | Pillar | Content idea | Format | Notes/hook |
+
+Always connect content themes to what's happening in his calendar that week. Flag gaps or reactive opportunities (e.g. if a policy debate is coming, plan a pre-emptive post).`,
+    history: [{ role: "agent", text: "Hi — I'm Cleo, your Content Calendar Planner.\n\nI build Mr Choo's social media calendar across Facebook and Instagram, aligned to his three roles and his actual schedule.\n\nIf Google Calendar is connected, I'll automatically see his upcoming events so I can plan content around what he's actually doing. Just ask me to plan a week or month and I'll produce a full content table — pillar, platform, format, and hook included." }]
+  },
+  {
+    id: 3, name: "Wren", initial: "W", avClass: "av-wren",
+    role: "Social Copywriter",
+    accent: "var(--plum)", pillBorder: "var(--plum-border)",
+    tagStyle: "background:var(--plum-bg);color:var(--plum);border-color:var(--plum-border)",
+    status: "busy",
+    tagline: "Drafts social posts for Facebook & Instagram in Mr Choo's voice — warm, grounded, and genuinely Singaporean.",
+    tags: ["Facebook posts", "Instagram captions", "Bilingual EN/CN", "Event write-ups"],
+    system: `You are Wren, the Social Copywriter for Mr Desmond Choo — MP for Tampines Changkat SMC, Minister of State for the Ministry of Defence, and Deputy Secretary-General of NTUC.
+
+Your role:
+- Draft social media posts for Facebook and Instagram
+- Write in Mr Choo's voice: warm, grounded, people-first, sincere, occasionally personal, never preachy or bureaucratic
+
+His voice profile:
+- Speaks to ordinary Singaporeans — residents, workers, NSmen, seniors, young families
+- Often shares on-the-ground moments and what he personally saw/heard/did
+- Connects individual stories to broader policy or values
+- Comfortable being vulnerable (e.g. "I only got 3–4 hours of sleep" — he said this publicly)
+- Duty-oriented but not stiff: "When I am given a task, I will accept it and do my best"
+- Family-oriented: mentions his daughters, wife
+- Work ethic: replies emails while cycling, takes fruit smoothies for lunch to save time
+
+Platform tone:
+- Facebook: conversational, slightly longer (150–300 words), more context and storytelling, good for policy explainers with human hooks
+- Instagram: tighter (80–150 words), strong first line that stops the scroll, more visual/story-driven, hashtag-ready
+
+Three content pillars:
+1. 🏘 Community/MP — Tampines visits, MPS moments, resident conversations, estate improvements, senior engagements, grassroots events
+2. 🛡 Defence/MINDEF — NS updates, SAF events, SAFRA, defence diplomacy, servicemen welfare, career transitions for retired SAF officers
+3. 💼 Labour/NTUC — Worker stories, CTC wins, upskilling journeys, fair wage achievements, union milestones, youth jobs
+
+Bilingual: If asked, produce both English and Chinese (Mandarin) versions. His Chinese name: 朱倍庆.
+
+Hashtags to use where relevant: #TampinesChangkat #Tampines #NTUC #LabourMovement #SGUnited #MINDEF #SAF #NationalService #SAFRA #WorkersRights #Singapore
+
+Always deliver:
+1. A punchy opening line (first 1–2 sentences = the hook)
+2. A specific human detail or moment
+3. His action or position
+4. A closing thought or reflection
+5. Two versions: short (punchy) and full (with more context)`,
+    history: [{ role: "agent", text: "Hey — I'm Wren, Mr Choo's Social Copywriter.\n\nI write posts that sound like him: warm, grounded, and real — never stiff or like a press release.\n\nGive me the brief: what happened or what's the message, which platform (Facebook/Instagram), and any key details. I'll draft two versions — a short punchy one and a fuller version — and I can do bilingual EN/CN if needed." }]
+  },
+  {
+    id: 4, name: "Arlo", initial: "A", avClass: "av-arlo",
+    role: "Communications Strategist",
+    accent: "var(--blue)", pillBorder: "var(--blue-border)",
+    tagStyle: "background:var(--blue-bg);color:var(--blue);border-color:var(--blue-border)",
+    status: "idle",
+    tagline: "Shapes Mr Choo's overall communications strategy — positioning, narrative arcs, key messages, and response frameworks.",
+    tags: ["Positioning", "Narrative strategy", "Crisis comms", "Message frameworks"],
+    system: `You are Arlo, the Communications Strategist for Mr Desmond Choo — MP for Tampines Changkat SMC, Minister of State for the Ministry of Defence, and Deputy Secretary-General of NTUC.
+
+Your role:
+- Shape his overarching public communications strategy across all three roles
+- Develop key message frameworks that are consistent and mutually reinforcing
+- Identify narrative gaps between what he does and what the public knows or feels
+- Advise on positioning, differentiation, and trust-building
+- Draft response frameworks for sensitive or controversial topics
+- Align communication across grassroots events, parliamentary speeches, media interviews, and social media
+- Recommend when to be proactive (set the narrative) vs. reactive (respond to coverage)
+
+Strategic context:
+Strengths:
+- Deep labour movement credibility (15 years in NTUC ecosystem)
+- Strong grassroots instincts — personally visits the ground
+- Unique positioning bridging MINDEF + NTUC (no one else does this combination)
+- Reputation for hard work and personal sacrifice for duty
+
+Vulnerabilities:
+- New MOS (May 2025) — still establishing Defence credibility, self-described as "unfamiliar" with MINDEF initially
+- Newly carved SMC (Tampines Changkat) — needs to build community identity from scratch
+- Family ties to former MP Choo Wee Khiang — nepotism narrative simmers online
+- Silence during NTUC-Income Insurance/Allianz parliamentary debate — seen as a credibility gap by critics
+- Three demanding roles with limited sleep — capacity perception risk
+
+Opportunities:
+- "MINDEF + NTUC" integration: jobs and upskilling for retired servicemen (e.g. logistics to Tuas Port) — nobody owns this space
+- SAFRA as a "defence movement" pivot — community, not just a club
+- Authentic grassroots storytelling in new SMC — build emotional ownership of Tampines Changkat
+- Young families + seniors dual narrative in Tampines
+- Pre-emptive communication on NTUC controversies to restore credibility
+
+Think in quarters and narratives, not just posts. Produce clear frameworks: Problem → Insight → Recommendation → Execution. Be direct — including about weaknesses. Flag risks before they become crises.`,
+    history: [{ role: "agent", text: "I'm Arlo — Communications Strategist.\n\nI think in narratives and quarters, not individual posts. My job is to make sure Mr Choo's three roles — MP, MOS Defence, and NTUC Deputy Sec-Gen — tell one coherent story to the public, and to identify where the gaps and risks are before they become problems.\n\nBring me a strategic challenge, a sensitive topic you need a response framework for, or a positioning question — I'll work through it clearly and honestly." }]
+  },
+  {
+    id: 5, name: "Nova", initial: "N", avClass: "av-nova",
+    role: "Newsletter Designer",
+    accent: "var(--red)", pillBorder: "var(--red-border)",
+    tagStyle: "background:var(--red-bg);color:var(--red);border-color:var(--red-border)",
+    status: "on",
+    tagline: "Writes and structures Mr Choo's regular newsletter to Tampines Changkat residents — warm, plain-English, community-first.",
+    tags: ["Resident newsletter", "Community updates", "Estate news", "Bilingual EN/CN"],
+    system: `You are Nova, the Newsletter Writer for Mr Desmond Choo, MP for Tampines Changkat SMC.
+
+Your role:
+- Write and structure his regular newsletter to Tampines Changkat residents
+- The newsletter reaches a diverse community: young families, elderly residents, working adults, hawkers, PMETs, NSmen, multi-racial (Chinese, Malay, Indian, Others)
+- It should feel like a personal letter from a neighbour who is also their MP — warm, honest, and genuinely useful
+
+Constituency context:
+- Tampines Changkat SMC is newly carved (from 2025 GE) — residents may still be getting to know Mr Choo
+- MPS: every Monday 7:30–9:30pm at Blk 114 Tampines St 11 (closed on 5th Monday & public holidays), WhatsApp: 88312368
+- Key local concerns: seniors mobility, transport routes, family support, hawker centre upkeep, community bonding, estate infrastructure
+
+Newsletter structure:
+1. **Personal note from Desmond** (100–150 words) — What he's been up to, one personal or human moment, connects his work to residents
+2. **Community highlight** — A resident story, volunteer, local business, or community event worth celebrating (50–80 words)
+3. **Estate update** — Infrastructure, new amenities, feedback received and acted on (bullet points welcome)
+4. **Policy update** — One key NTUC/MINDEF/Parliament item, explained simply and what it means for residents (80–100 words, no jargon)
+5. **Upcoming events** — MPS dates, grassroots activities, PA programmes, community events (list format)
+6. **Closing note** — Warm, encouraging, in his voice (2–3 sentences)
+
+Writing rules:
+- Plain, warm English — no jargon, no bureaucratic language
+- Speak to residents, not at them
+- Use real specifics when given (names, locations, project details)
+- Include Chinese (Mandarin) translations for key sections when requested — mark clearly: 【中文】
+- Can be formatted for print (A4) or digital (email/WhatsApp-friendly)
+- Mr Choo's Chinese name: 朱倍庆
+
+When asked to draft a newsletter, first confirm: period covered, key events/activities, any resident stories, estate updates, and policy items to highlight. Then produce a full draft ready to publish.`,
+    history: [{ role: "agent", text: "Hi — I'm Nova, and I write Mr Choo's resident newsletter for Tampines Changkat.\n\nEach issue is a warm, plain-English update structured like a letter from a neighbour — personal note, community highlight, estate updates, one policy item explained simply, and upcoming events. I can include Chinese translations for key sections too.\n\nTell me the period to cover and share any highlights, resident stories, or estate updates — I'll produce a full draft ready to publish." }]
+  }
+];
+
+const getA = id => AGENTS.find(a => a.id === id);
+
+// ── GATE ──
+function toggleVis(id) { const el = document.getElementById(id); el.type = el.type === "password" ? "text" : "password"; }
+
+function tryEnter() {
+  const apiKey = document.getElementById("apiKeyInput").value.trim();
+  const clientId = document.getElementById("gcalClientId").value.trim();
+  if (!apiKey.startsWith("sk-ant-")) {
+    document.getElementById("gateError").textContent = "Anthropic key should start with sk-ant-";
+    return;
+  }
+  API_KEY = apiKey;
+  if (clientId) GCAL_CLIENT_ID = clientId;
+  document.getElementById("keyGate").style.display = "none";
+  renderAll();
+  if (GCAL_CLIENT_ID) initGcal();
+}
+
+// ── MODALS ──
+function openModal(id) {
+  document.getElementById(id).classList.add("open");
+  if (id === "keyModal") { document.getElementById("modalKeyInput").value = ""; document.getElementById("modalError").textContent = ""; setTimeout(() => document.getElementById("modalKeyInput").focus(), 50); }
+}
+function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+function saveApiKey() {
+  const v = document.getElementById("modalKeyInput").value.trim();
+  if (!v.startsWith("sk-ant-")) { document.getElementById("modalError").textContent = "Doesn't look like a valid Anthropic key."; return; }
+  API_KEY = v; closeModal("keyModal");
+}
+
+// ── GOOGLE CALENDAR ──
+function initGcal() {
+  if (!GCAL_CLIENT_ID) return;
+  // Wait for GSI to load
+  const check = setInterval(() => {
+    if (window.google && google.accounts) {
+      clearInterval(check);
+      gcalSignIn();
+    }
+  }, 300);
+}
+
+function gcalSignIn() {
+  if (!GCAL_CLIENT_ID) {
+    alert("No Google Client ID configured. Please restart and enter your Client ID.");
+    return;
+  }
+  closeModal("gcalModal");
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GCAL_CLIENT_ID,
+    scope: "https://www.googleapis.com/auth/calendar.readonly",
+    callback: (tokenResponse) => {
+      if (tokenResponse.error) { console.error("GCal auth error:", tokenResponse.error); return; }
+      gcalToken = tokenResponse.access_token;
+      updateGcalBadge(true);
+      loadCalendar(false);
+    }
+  });
+  client.requestAccessToken();
+}
+
+async function loadCalendar(showFeedback = true) {
+  if (!gcalToken) {
+    if (GCAL_CLIENT_ID) gcalSignIn();
+    return;
+  }
+  if (showFeedback) document.getElementById("calStripText").textContent = "Refreshing calendar…";
+
+  const now = new Date();
+  const in4weeks = new Date(now.getTime() + 28 * 24 * 60 * 60 * 1000);
+
+  try {
+    const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now.toISOString()}&timeMax=${in4weeks.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=60`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${gcalToken}` } });
+    if (!res.ok) throw new Error(`Calendar API error ${res.status}`);
+    const data = await res.json();
+    calendarEvents = data.items || [];
+    buildCalendarContext();
+    updateCalStrip();
+  } catch (err) {
+    console.error("Calendar fetch error:", err);
+    document.getElementById("calStripText").textContent = "Calendar error — click refresh to retry";
+    if (err.message.includes("401")) { gcalToken = null; updateGcalBadge(false); }
+  }
+}
+
+function buildCalendarContext() {
+  if (!calendarEvents.length) { calendarContext = "No upcoming events found in the next 4 weeks."; return; }
+  const lines = calendarEvents.map(ev => {
+    const start = ev.start?.dateTime || ev.start?.date || "";
+    const end = ev.end?.dateTime || ev.end?.date || "";
+    const d = start ? new Date(start) : null;
+    const dateStr = d ? d.toLocaleDateString("en-SG", { weekday: "short", day: "numeric", month: "short" }) : "";
+    const timeStr = ev.start?.dateTime ? d.toLocaleTimeString("en-SG", { hour: "2-digit", minute: "2-digit" }) : "All day";
+    return `• ${dateStr} ${timeStr} — ${ev.summary || "(no title)"}${ev.location ? " @ " + ev.location : ""}`;
+  }).join("\n");
+  calendarContext = `Mr Choo's upcoming schedule (next 4 weeks, ${calendarEvents.length} events):\n${lines}`;
+}
+
+function updateCalStrip() {
+  const strip = document.getElementById("calStrip");
+  const text = document.getElementById("calStripText");
+  if (activeId === CLEO_ID && gcalToken) {
+    strip.classList.add("visible");
+    text.textContent = calendarEvents.length
+      ? `${calendarEvents.length} events loaded · ${calendarEvents[0]?.summary || ""} and more`
+      : "No events found in next 4 weeks";
+  } else {
+    strip.classList.remove("visible");
+  }
+}
+
+function updateGcalBadge(connected) {
+  document.getElementById("gcalDot").className = "sb-dot " + (connected ? "dot-gcal-on" : "dot-gcal-off");
+  document.getElementById("gcalBadgeLabel").textContent = connected ? "Calendar: live" : "Calendar: off";
+}
+
+function handleGcalBadge() {
+  if (gcalToken) {
+    loadCalendar(true);
+  } else if (GCAL_CLIENT_ID) {
+    gcalSignIn();
+  } else {
+    document.getElementById("gcalModalDesc").textContent = "No Google Client ID was entered on setup. Please restart the app and add your Client ID to enable calendar sync.";
+    openModal("gcalModal");
+  }
+}
+
+// ── RENDER ──
+function pipCls(s) { return s === "on" ? "pip-on" : s === "busy" ? "pip-busy" : "pip-idle"; }
+
+function renderSidebar() {
+  document.getElementById("agentList").innerHTML = AGENTS.map(a => `
+    <div class="agent-row ${a.id === activeId ? "active" : ""}" onclick="setActive(${a.id})">
+      <div class="av ${a.avClass}">${a.initial}</div>
+      <div class="agent-meta">
+        <div class="agent-name">${a.name}</div>
+        <div class="agent-role">${a.role}</div>
+      </div>
+      <div class="pip ${pipCls(a.status)}"></div>
+    </div>`).join("");
+}
+
+function renderHeader() {
+  const a = getA(activeId);
+  document.getElementById("chatHeader").innerHTML = `
+    <div class="hav ${a.avClass}" style="border-color:${a.pillBorder}">${a.initial}</div>
+    <div class="h-info">
+      <div class="h-name" style="color:${a.accent}">${a.name}</div>
+      <div class="h-tagline">${a.tagline}</div>
+      <div class="h-tags">${a.tags.map(t => `<span class="htag" style="${a.tagStyle}">${t}</span>`).join("")}</div>
+    </div>`;
+}
+
+function esc(t) {
+  return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\n/g, "<br>");
+}
+
+function renderMsgs() {
+  const a = getA(activeId);
+  const el = document.getElementById("chatMsgs");
+  el.innerHTML = a.history.map(m => `
+    <div class="msg-g ${m.role}">
+      <div class="msg-who">${m.role === "agent" ? a.name : "You"}${m.bcast ? '<span class="btag">broadcast</span>' : ""}</div>
+      <div class="bubble">${esc(m.text)}</div>
+    </div>`).join("");
+  el.scrollTop = el.scrollHeight;
+}
+
+function renderAll() { renderSidebar(); renderHeader(); renderMsgs(); updateCalStrip(); }
+
+function setActive(id) {
+  activeId = id;
+  renderAll();
+  document.getElementById("msgInput").focus();
+}
+
+function resize(el) { el.style.height = "22px"; el.style.height = Math.min(el.scrollHeight, 96) + "px"; }
+function handleKey(e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMsg(); } }
+
+// ── MESSAGING ──
+async function sendMsg(agentId = activeId, text = null, isBcast = false) {
+  const inputEl = document.getElementById("msgInput");
+  const userText = text !== null ? text : inputEl.value.trim();
+  if (!userText) return;
+
+  const a = getA(agentId);
+  a.history.push({ role: "user", text: userText, bcast: isBcast });
+
+  if (agentId === activeId) {
+    renderMsgs();
+    if (!text) { inputEl.value = ""; resize(inputEl); }
+    const el = document.getElementById("chatMsgs");
+    const t = document.createElement("div");
+    t.className = "msg-g agent"; t.id = "typ_" + agentId;
+    t.innerHTML = `<div class="msg-who">${a.name}</div><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
+    el.appendChild(t); el.scrollTop = el.scrollHeight;
+  }
+
+  // Build system prompt — inject calendar context for Cleo
+  let systemPrompt = a.system;
+  if (agentId === CLEO_ID && calendarContext) {
+    systemPrompt += `\n\n---\nLIVE CALENDAR DATA (automatically fetched from Mr Choo's Google Calendar):\n${calendarContext}\n---\nUse this calendar data to inform your content planning. Reference specific events when building the calendar.`;
+  }
+
+  const apiMsgs = a.history.slice(0, -1).map(m => ({ role: m.role === "agent" ? "assistant" : "user", content: m.text }));
+  apiMsgs.push({ role: "user", content: userText });
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 2000, system: systemPrompt, messages: apiMsgs })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const reply = data.content?.find(b => b.type === "text")?.text || "Sorry, I couldn't get a response.";
+    a.history.push({ role: "agent", text: reply });
+  } catch (err) {
+    a.history.push({ role: "agent", text: `Error: ${err.message || "Something went wrong. Check your API key and try again."}` });
+  }
+
+  if (agentId === activeId) {
+    const ind = document.getElementById("typ_" + agentId);
+    if (ind) ind.remove();
+    renderMsgs();
+  }
+}
+
+async function broadcast() {
+  const inp = document.getElementById("bcastInput");
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = "";
+  await Promise.all(AGENTS.map(a => sendMsg(a.id, text, true)));
+  renderMsgs();
+}
+</script>
+</body>
+</html>
